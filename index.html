@@ -109,3 +109,93 @@ function update(){
         }
     }
 }
+function draw(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#4ade80";
+    ctx.fillRect(0, canvas.height -60, canvas.width, 60);
+
+    ctx.drawImage(basketImg, basket.x, basket.y, basket.width, basket.height);
+    apples.forEach(a=>{
+        const img = (a.type==='good')? goodAppleImg: badAppleImg;
+        ctx.drawImage(img, a.x, a.y, appleSize, appleSize);
+    });
+    ctx.fillStyle="#0f172a";
+    ctx.font = "bold 28px sans-serif";
+    ctx.fillText(`Score: ${score}`, 30, 50);
+    ctx.fillText(`Lives: ${"❤️".repeat(Math.max(0, lives))}`, 30, 95);
+    ctx.fillText(`Time Left: ${timmLeft}s`, canvas.width, canvas.width - 220, 50);
+
+    if (gameOver) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 50px sans-serif";
+        ctx.textAlign = "center";
+
+        if (lives <= 0) {
+            ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 30);
+        } else {
+            ctx.fillText("Time's Up!", canvas.width / 2, canvas.height / 2 - 30);
+        }
+
+        ctx.font = "30px sans-serif";
+        ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillText("Click Anywhere to play Again", canvas.width / 2, canvas.height / 2 + 90);
+        ctx.textAlign = "left";
+    }
+}
+
+function checkGameOver () {
+    if (lives <= 0) {
+        endGame();
+    }
+}
+
+function endGame() {
+    gameOver = true;
+    clearInterval(timerInterval);
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        if (!gameOver) {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+    }, 1000);
+}
+
+function resetGame() {
+    score = 0;
+    lives = 3;
+    timeLeft = 30;
+    apples.length = 0;
+    spawnTimer = 0;
+    gameOver = false;
+    clearInterval(timerInterval);
+    startTimer();
+}
+function resetGame(){
+    score = 0;
+    lives= 3;
+    timeLeft=30;
+    apples.length=0;
+    spawnTimer=0;
+    gameOver=false;
+    clearInterval(timerInterval);
+    startTimer();
+}
+function tick() {
+    update();
+    draw();
+    requestAnimationFrame(tick);
+}
+startTimer();
+tick();
+</script>
+</body>
+</html>
