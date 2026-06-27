@@ -28,41 +28,18 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Game State
+
 let score = 0;
 let lives = 3;
 let timeLeft = 30;
 let gameOver = false;
 let timerInterval;
 
-// Player Basket Asset
-const basketImg = new Image();
-basketImg.src = "apple-Photoroom.png";
+const itemSize = 110;
+const fallingItems = [];
+let spawnTimer = 0;
+let spawnRate = 40;
 
-// Threat Hazard Asset
-const bombImg = new Image();
-bombImg.src = "bomb.png";
-
-// Good Fruit Asset Pool
-const fruitFiles = [
-    "good apple-Photoroom.png",
-    "dragon fruit.png",
-    "banana.png",
-    "guava.png",
-    "grapes.png",
-    "strawberry.png",
-    "watermelon.png"
-];
-
-// Preload fruit images into an array for easy random selection
-const fruitImages = fruitFiles.map(file => {
-    const img = new Image();
-    img.src = file;
-    return img;
-});
-
-// Dimensions & Physics Configuration
-const itemSize = 110; 
 const basket = {
     x: 0,
     y: 0,
@@ -70,46 +47,49 @@ const basket = {
     height: 110
 };
 
-const fallingItems = [];
-let spawnTimer = 0;
-let spawnRate = 40; 
 
-// Scale viewport dynamically
+const basketImg = new Image();
+basketImg.src = "imgs/basket.png";
+
+const bombImg = new Image();
+bombImg.src = "imgs/bomb.png";
+
+// Map fruit sources to Image objects directly
+const fruitImages = [
+    "imgs/apple.png",
+    "imgs/dragon fruit.png",
+    "imgs/banana.png",
+    "imgs/guava.png",
+    "imgs/grapes.png",
+    "imgs/strawberry.png",
+    "imgs/watermelon.png"
+].map(src => {
+    const img = new Image();
+    img.src = src;
+    return img;
+});
+
+// Handle layout & resizing
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     basket.y = canvas.height - 150; 
     
+    // Keep basket in bounds if resizing narrows the screen
     if (basket.x > canvas.width - basket.width) {
         basket.x = canvas.width - basket.width;
     }
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-// Controls
-window.addEventListener("mousemove", (e) => {
-    basket.x = e.clientX - basket.width / 2;
-    
-    if (basket.x < 0) basket.x = 0;
-    if (basket.x > canvas.width - basket.width) basket.x = canvas.width - basket.width;
-});
-
-window.addEventListener("click", () => {
-    if (gameOver) resetGame();
-});
 
 function spawnItem() {
-    const isBomb = Math.random() < 0.35; // 35% chance of spawning a bomb hazard
-    let itemImage;
-    let itemType;
+    const isBomb = Math.random() < 0.35; // ~35% drop rate for bombs
+    let itemImage, itemType;
 
     if (isBomb) {
         itemType = 'bomb';
         itemImage = bombImg;
     } else {
         itemType = 'fruit';
-        // Grab a random fruit asset from our preloaded selection
         itemImage = fruitImages[Math.floor(Math.random() * fruitImages.length)];
     }
 
@@ -131,12 +111,12 @@ function update() {
         spawnTimer = 0;
     }
 
-    // Step backwards through loop to safely handle splicing during runtime
+    // Loop backwards so splicing doesn't skip indexes
     for (let i = fallingItems.length - 1; i >= 0; i--) {
         let item = fallingItems[i];
         item.y += item.speed;
 
-        // Collision checking with basket bounds
+        // AABB Collision checking
         if (item.y + itemSize >= basket.y &&
             item.y <= basket.y + basket.height &&
             item.x + itemSize >= basket.x &&
@@ -145,17 +125,17 @@ function update() {
             if (item.type === 'fruit') {
                 score++;
             } else {
-                lives--; // Bomb hit costs a life
+                lives--;
             }
             fallingItems.splice(i, 1);
             checkGameOver();
             continue;
         }
 
-        // Out of bounds checking (missed items hitting the ground)
+        // Drop out of frame handling
         if (item.y > canvas.height) {
             if (item.type === 'fruit') {
-                lives--; // Only penalize missing good fruits, let bombs pass safely
+                lives--; // Missed fruit costs a life
             }
             fallingItems.splice(i, 1);
             checkGameOver();
@@ -166,26 +146,26 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Decorative ground floor
+    // Green floor
     ctx.fillStyle = "#4ade80";
     ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
 
-    // Render player
+    // Draw player basket
     ctx.drawImage(basketImg, basket.x, basket.y, basket.width, basket.height);
     
-    // Render dynamic entities
+    // Draw fruits & bombs
     fallingItems.forEach(item => {
         ctx.drawImage(item.img, item.x, item.y, itemSize, itemSize);
     });
 
-    // Heads Up Display
+    // Scoreboard UI
     ctx.fillStyle = "#0f172a";
     ctx.font = "bold 28px sans-serif";
     ctx.fillText(`Score: ${score}`, 30, 50);
     ctx.fillText(`Lives: ${"❤️".repeat(Math.max(0, lives))}`, 30, 95);
     ctx.fillText(`Time Left: ${timeLeft}s`, canvas.width - 220, 50);
 
-    // Game Over Overlay
+    // End game state overlay
     if (gameOver) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -194,8 +174,8 @@ function draw() {
         ctx.font = "bold 50px sans-serif";
         ctx.textAlign = "center";
 
-        const message = (lives <= 0) ? "Game Over!" : "Time's Up!";
-        ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 30);
+        const msg = (lives <= 0) ? "Game Over!" : "Time's Up!";
+        ctx.fillText(msg, canvas.width / 2, canvas.height / 2 - 30);
 
         ctx.font = "30px sans-serif";
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 30);
@@ -235,14 +215,28 @@ function resetGame() {
     startTimer();
 }
 
-// Engine Loop
+
 function tick() {
     update();
     draw();
     requestAnimationFrame(tick);
 }
 
-// Initialization Entry Points
+window.addEventListener('resize', resizeCanvas);
+
+window.addEventListener("mousemove", (e) => {
+    basket.x = e.clientX - basket.width / 2;
+
+    if (basket.x < 0) basket.x = 0;
+    if (basket.x > canvas.width - basket.width) basket.x = canvas.width - basket.width;
+});
+
+window.addEventListener("click", () => {
+    if (gameOver) resetGame();
+});
+
+
+resizeCanvas();
 startTimer();
 tick();
 </script>
