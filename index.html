@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fruit Catch Game</title>
+    <title>Fruit Catch</title>
     <style>
         body, html {
             margin: 0;
@@ -54,7 +54,7 @@ basketImg.src = "imgs/basket.png";
 const bombImg = new Image();
 bombImg.src = "imgs/bomb.png";
 
-// Map fruit sources to Image objects directly
+
 const fruitImages = [
     "imgs/apple.png",
     "imgs/dragon fruit.png",
@@ -69,20 +69,20 @@ const fruitImages = [
     return img;
 });
 
-// Handle layout & resizing
+
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     basket.y = canvas.height - 150; 
     
-    // Keep basket in bounds if resizing narrows the screen
+
     if (basket.x > canvas.width - basket.width) {
         basket.x = canvas.width - basket.width;
     }
 }
 
 function spawnItem() {
-    const isBomb = Math.random() < 0.35; // ~35% drop rate for bombs
+    const isBomb = Math.random() < 0.35; 
     let itemImage, itemType;
 
     if (isBomb) {
@@ -111,12 +111,12 @@ function update() {
         spawnTimer = 0;
     }
 
-    // Loop backwards so splicing doesn't skip indexes
+  
     for (let i = fallingItems.length - 1; i >= 0; i--) {
         let item = fallingItems[i];
         item.y += item.speed;
 
-        // AABB Collision checking
+  
         if (item.y + itemSize >= basket.y &&
             item.y <= basket.y + basket.height &&
             item.x + itemSize >= basket.x &&
@@ -132,10 +132,10 @@ function update() {
             continue;
         }
 
-        // Drop out of frame handling
+
         if (item.y > canvas.height) {
             if (item.type === 'fruit') {
-                lives--; // Missed fruit costs a life
+                lives--; 
             }
             fallingItems.splice(i, 1);
             checkGameOver();
@@ -146,26 +146,26 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Green floor
+    
     ctx.fillStyle = "#4ade80";
     ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
 
-    // Draw player basket
+   
     ctx.drawImage(basketImg, basket.x, basket.y, basket.width, basket.height);
     
-    // Draw fruits & bombs
+  
     fallingItems.forEach(item => {
         ctx.drawImage(item.img, item.x, item.y, itemSize, itemSize);
     });
 
-    // Scoreboard UI
+   
     ctx.fillStyle = "#0f172a";
     ctx.font = "bold 28px sans-serif";
     ctx.fillText(`Score: ${score}`, 30, 50);
     ctx.fillText(`Lives: ${"❤️".repeat(Math.max(0, lives))}`, 30, 95);
     ctx.fillText(`Time Left: ${timeLeft}s`, canvas.width - 220, 50);
 
-    // End game state overlay
+   
     if (gameOver) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
